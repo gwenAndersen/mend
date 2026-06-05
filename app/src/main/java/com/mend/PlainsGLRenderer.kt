@@ -71,7 +71,9 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private var offsetX = 0f
     private var offsetY = 0f
 
-    private var layerTexture = 0
+    private var layer1Texture = 0
+    private var layer2Texture = 0
+    private var layer3Texture = 0
     private var screenWidth = 0
     private var screenHeight = 0
 
@@ -85,9 +87,11 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         setupBuffers()
         setupShaders()
         
-        // Load the provided vector drawable
-        layerTexture = loadVectorTexture(R.drawable.plains_layer_1)
-        android.util.Log.d("PlainsRenderer", "Layer texture loaded: $layerTexture")
+        // Load the provided vector drawables
+        layer1Texture = loadVectorTexture(R.drawable.plains_layer_1)
+        layer2Texture = loadVectorTexture(R.drawable.plains_layer_2)
+        layer3Texture = loadVectorTexture(R.drawable.plains_layer_3)
+        android.util.Log.d("PlainsRenderer", "Textures loaded. L1: $layer1Texture, L2: $layer2Texture, L3: $layer3Texture")
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -102,7 +106,7 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     override fun onDrawFrame(gl: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
-        if (layerTexture == 0) return
+        if (layer1Texture == 0 || layer2Texture == 0 || layer3Texture == 0) return
 
         GLES20.glUseProgram(program)
 
@@ -116,7 +120,7 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         // Calculate scaling to fill the screen (Center Crop)
         val screenRatio = screenWidth.toFloat() / screenHeight.toFloat()
-        val textureRatio = 800f / 1601f
+        val textureRatio = 2000f / 1600f
         
         var baseScaleX = 1f
         var baseScaleY = 1f
@@ -131,26 +135,37 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
             baseScaleY = 1f
         }
 
-        // Remove extra scale so the frame fits perfectly top-to-bottom on most phones (like Poco C65)
+        // Remove extra scale so the frame fits perfectly top-to-bottom on most phones
         val extraScale = 1.0f
-        
-        Matrix.setIdentityM(viewMatrix, 0)
-        // Apply parallax offset using only natural bleed (if any)
         var maxOffset = (baseScaleX * extraScale) - (screenWidth.toFloat() / screenHeight.toFloat())
         if (maxOffset < 0) maxOffset = 0f // prevent negative parallax if screen is wider
-        Matrix.translateM(viewMatrix, 0, -offsetX * maxOffset, 0f, 0f)
+
+        // Draw Layer 1 (Background - slower parallax)
+        drawLayer(layer1Texture, 0.5f, baseScaleX, baseScaleY, extraScale, maxOffset)
+        
+        // Draw Layer 2 (Middle - medium parallax)
+        drawLayer(layer2Texture, 1.0f, baseScaleX, baseScaleY, extraScale, maxOffset)
+
+        // Draw Layer 3 (Foreground - faster parallax)
+        drawLayer(layer3Texture, 1.5f, baseScaleX, baseScaleY, extraScale, maxOffset)
+
+        GLES20.glDisable(GLES20.GL_BLEND)
+    }
+
+    private fun drawLayer(textureId: Int, parallaxSpeed: Float, baseScaleX: Float, baseScaleY: Float, extraScale: Float, maxOffset: Float) {
+        Matrix.setIdentityM(viewMatrix, 0)
+        // Parallax removed per user request: texture remains locked in the center
+        Matrix.translateM(viewMatrix, 0, 0f, 0f, 0f)
         Matrix.scaleM(viewMatrix, 0, baseScaleX * extraScale, baseScaleY * extraScale, 1f)
         
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, layerTexture)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
         GLES20.glUniform1i(textureUniformHandle, 0)
         
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, drawOrder.size, GLES20.GL_UNSIGNED_SHORT, drawListBuffer)
-
-        GLES20.glDisable(GLES20.GL_BLEND)
     }
 
     private fun loadVectorTexture(resId: Int): Int {
@@ -158,12 +173,12 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         
         // NOTE: The vector layers are exported from a Figma frame named "Viewport Boundary".
         // This frame MUST have "Clip content" enabled in Figma so that the exported SVG 
-        // perfectly maintains the 800x1601 aspect ratio, even if objects bleed out of bounds.
+        // perfectly maintains the 720x1600 aspect ratio, even if objects bleed out of bounds.
         // Because the Y-axis is perfectly matched to the device screen, ensuring all layers
-        // share this exact 800x1601 viewport keeps everything perfectly aligned.
+        // share this exact 720x1600 viewport keeps everything perfectly aligned.
         val scale = 2.0f
-        val width = (800 * scale).toInt()
-        val height = (1601 * scale).toInt()
+        val width = (720 * scale).toInt()
+        val height = (1600 * scale).toInt()
         
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
