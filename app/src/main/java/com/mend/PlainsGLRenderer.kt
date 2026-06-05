@@ -156,8 +156,11 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private fun loadVectorTexture(resId: Int): Int {
         val drawable = ContextCompat.getDrawable(context, resId) ?: return 0
         
-        // The Figma viewport is 800x1601. 
-        // We render it at a scale that maintains quality.
+        // NOTE: The vector layers are exported from a Figma frame named "Viewport Boundary".
+        // This frame MUST have "Clip content" enabled in Figma so that the exported SVG 
+        // perfectly maintains the 800x1601 aspect ratio, even if objects bleed out of bounds.
+        // Because the Y-axis is perfectly matched to the device screen, ensuring all layers
+        // share this exact 800x1601 viewport keeps everything perfectly aligned.
         val scale = 2.0f
         val width = (800 * scale).toInt()
         val height = (1601 * scale).toInt()
