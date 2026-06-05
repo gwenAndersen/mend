@@ -1,0 +1,52 @@
+{
+  "stages": [
+    {
+      "stage": "1. Initial Pitch",
+      "keywords": ["start", "hello", "hi"],
+      "prompt": "This is the first message to send to a potential customer.",
+      "responses": [
+        "⭐ ⭐\nআর অপেক্ষা নয়! আপনার ভিডিওকে দ্রুত ভাইরাল করে হাজার বা লক্ষ মানুষের কাছে পৌঁছে দিন। আমাদের বিশেষ প্যাকেজ-এর মাধ্যমে আপনার TikTok প্রোফাইল রাতারাতি জনপ্রিয় হবে for you তে 🥳।\n\n🚀 মাত্র ৩০০ টাকা  আপনার ভিডিওতে পাচ্ছেন ৩,২৫০+ লাইক এবং ৩,৫০০+ থেকে ১৬,৬০০+ ভিউ। \n \nআমরা শুধু ভিউ এর গ্যারান্টি দেই, মানুষ লাইক ফলো শেয়ার কমেন্ট সবকিছু করবে ❤️ \n\nআপনার সুযোগ হাতছাড়া করবেন না!\n\nএর থেকেও ভালো প্যাকেজ আছে দেখবেন? 💰"
+      ]
+    },
+    {
+      "stage": "2. Affordable Packages",
+      "keywords": ["cheap", "affordable", "less price"],
+      "prompt": "The user is asking for a cheaper option. Offer them the 'সাশ্রয়ী প্যাকেজ'.",
+      "responses": [
+        "সাশ্রয়ী প্যাকেজ:\n10k ভিউ 1k লাইক 150 টাকা\n10k ভিউ 3k লাইক 180 টাকা\n\n5k ভিউ 1k লাইক 80 টাকা\n2k ভিউ 500 লাইক 50 টাকা\n\n🥇কয়েন ভিত্তিক বিশেষ অফার:\n৩,০০০ থেকে ১৬,০০০ ভিউ - ৩০০ টাকায়"
+      ]
+    },
+    {
+      "stage": "3. Expensive Packages",
+      "keywords": ["more", "expensive", "better"],
+      "prompt": "The user is asking for a more expensive or better option. Offer them the premium packages.",
+      "responses": [
+        "✨ মাত্র ৬০০ টাকা আপনার ভিডিওতে পাচ্ছেন ২,৫০০+ লাইক এবং ৬,৯০০+ থেকে ৩৩,৩০০+ ভিউ। \n💎 মাত্র ৯০০ টাকা  আপনার ভিডিওতে পাচ্ছেন ৩,৭৫০+ লাইক এবং ১০,৪০০+ থেকে ৪৯,৯০০+ ভিউ।\n\nঅথবা এর থেকে দামি প্যাকেজ দেখতে চাইলে আপনার বাজেট বলুন 🪙"
+      ]
+    },
+    {
+      "stage": "4. Handling Trust Issues",
+      "keywords": ["trust", "proof", "scam", "fraud", "pay after"],
+      "prompt": "The user has trust issues and doesn't want to pay upfront. Reassure them and provide proof.",
+      "responses": [
+        "ভাই আমরা ওরকম না বিশ্বাস করতে পারেন, আমাদের অনেক কাস্টমার আজ পর্যন্ত কেউ এ কথা বলতে পারেনি যে আমরা কাউকে ঠকিয়েছি"
+      ]
+    },
+    {
+      "stage": "5. Closing/Pre-Payment",
+      "keywords": ["how to buy", "want to buy", "give link"],
+      "prompt": "The user has agreed to a package and wants to buy. Instruct them on the next steps.",
+      "responses": [
+        "আপনি টাকা পাঠাবেন এবং ভিডিও লিংক দিবেন, বাকিটা আমাদের কাজ"
+      ]
+    },
+    {
+      "stage": "6. Payment Details",
+      "keywords": ["number", "payment", "bkash", "nagad", "link"],
+      "prompt": "The user has asked for the payment number or has provided their video link. Provide the payment details.",
+      "responses": [
+        "01773675544\n✅[বিকাশ/নগদ]✅\n\n🤗পার্সোনাল নাম্বার! \n💸 সেন্ড মানি করুন! \n📸 স্ক্রিনশট দিন! \n⬇️ লাস্ট ৪ সংখ্যা দিন! \n\n❌ফ্লাক্সিলোড দিলে পেমেন্ট বাতিল❌"
+      ]
+    }
+  ]
+}

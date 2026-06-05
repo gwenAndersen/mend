@@ -1,0 +1,9 @@
+Audio Routing via Shizuku/ADB
+​Force Speaker Mode:
+media shell audio-set-force-use FOR_MEDIA FORCE_SPEAKER
+​Reset to Default (Earphone/Auto):
+media shell audio-set-force-use FOR_MEDIA FORCE_NONE
+​Alternative Broadcast Method:
+​Enable Earphone Mode: am broadcast -a android.intent.action.HEADSET_PLUG --ei state 1
+​Disable Earphone Mode: am broadcast -a android.intent.action.HEADSET_PLUG --ei state 0
+​Note: Execution requires Shizuku shell or ADB permissions.

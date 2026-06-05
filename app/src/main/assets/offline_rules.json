@@ -1,0 +1,28 @@
+[
+  {
+    "ruleName": "Polite Greeting",
+    "conditions": [
+      {
+        "type": "IS_FIRST_MESSAGE_FROM_USER",
+        "value": true
+      },
+      {
+        "type": "CONTAINS_ANY_KEYWORD",
+        "value": ["hi", "hello", "assalamu alaikum", "ভাই"]
+      }
+    ],
+    "matchStrategy": "MATCH_ALL",
+    "response": "ওয়ালাইকুম আসসালাম! আপনাকে কিভাবে সাহায্য করতে পারি?"
+  },
+  {
+    "ruleName": "Price Inquiry",
+    "conditions": [
+      {
+        "type": "CONTAINS_ANY_KEYWORD",
+        "value": ["price", "cost", "দাম কত", "টাকা"]
+      }
+    ],
+    "matchStrategy": "MATCH_ANY",
+    "response": "আমাদের বেশ কিছু প্যাকেজ রয়েছে। আপনার বাজেট বা প্রয়োজন সম্পর্কে বললে আপনাকে সেরা প্যাকেজটি বেছে নিতে সাহায্য করতে পারব।"
+  }
+]
