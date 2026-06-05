@@ -1,9 +1,5 @@
 <resources>
-<<<<<<< Updated upstream
-    <string name="app_name">Sync</string>
-=======
     <string name="app_name">Mend</string>
     <string name="wallpaper_description">Mend Live Wallpaper</string>
->>>>>>> Stashed changes
     <string name="accessibility_service_description">Monitors WhatsApp notifications to forward messages to Telegram.</string>
 </resources>

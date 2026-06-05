@@ -3,24 +3,16 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id 'org.jetbrains.kotlin.plugin.compose'
     id 'org.jetbrains.kotlin.plugin.serialization' version '2.0.0'
+    id 'kotlin-parcelize'
 }
 
 android {
-<<<<<<< Updated upstream
-    namespace 'com.alif.sync'
-=======
     namespace 'com.mend'
->>>>>>> Stashed changes
     compileSdk 34
-    ndkPath '/data/data/com.termux/files/home/android-ndk-r27b'
     ndkVersion '27.1.12297006'
 
     defaultConfig {
-<<<<<<< Updated upstream
-        applicationId "com.alif.sync"
-=======
         applicationId "com.mend"
->>>>>>> Stashed changes
         minSdk 26
         targetSdk 34
         versionCode 1
@@ -29,11 +21,6 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary true
-        }
-        externalNativeBuild {
-            cmake {
-                arguments "-DANDROID_NINJA=/data/data/com.termux/files/usr/bin/ninja"
-            }
         }
     }
 
@@ -111,6 +98,7 @@ dependencies {
     implementation "com.squareup.okhttp3:logging-interceptor:4.12.0"
 
     def shizuku_version = "12.1.0"
+    implementation "com.google.code.gson:gson:2.10.1"
     implementation "dev.rikka.shizuku:api:$shizuku_version"
     implementation "dev.rikka.shizuku:provider:$shizuku_version"
     implementation "com.google.accompanist:accompanist-webview:0.34.0"

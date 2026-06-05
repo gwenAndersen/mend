@@ -131,13 +131,13 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
             baseScaleY = 1f
         }
 
-        // Add 15% extra scale for "intentional bleed" and parallax movement
-        val extraScale = 1.15f
+        // Remove extra scale so the frame fits perfectly top-to-bottom on most phones (like Poco C65)
+        val extraScale = 1.0f
         
         Matrix.setIdentityM(viewMatrix, 0)
-        // Apply parallax offset
-        // Parallax range is constrained by the extra scale we added
-        val maxOffset = (baseScaleX * extraScale) - (screenWidth.toFloat() / screenHeight.toFloat())
+        // Apply parallax offset using only natural bleed (if any)
+        var maxOffset = (baseScaleX * extraScale) - (screenWidth.toFloat() / screenHeight.toFloat())
+        if (maxOffset < 0) maxOffset = 0f // prevent negative parallax if screen is wider
         Matrix.translateM(viewMatrix, 0, -offsetX * maxOffset, 0f, 0f)
         Matrix.scaleM(viewMatrix, 0, baseScaleX * extraScale, baseScaleY * extraScale, 1f)
         
