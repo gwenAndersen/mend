@@ -29,6 +29,15 @@ android {
         aidl false
     }
     
+    signingConfigs {
+        debug {
+            storeFile file('../debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+    
     buildTypes {
         release {
             minifyEnabled false
@@ -36,6 +45,7 @@ android {
             buildConfigField "String", "GEMINI_API_KEY", "\"\""
         }
         debug {
+            signingConfig signingConfigs.debug
             buildConfigField "String", "GEMINI_API_KEY", "\"AIzaSyCHdIRtCzYD21pF5eYMsZw-CvCLyEqCoBw\""
         }
     }
