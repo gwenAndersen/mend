@@ -46,7 +46,7 @@ android {
         }
         debug {
             signingConfig signingConfigs.debug
-            buildConfigField "String", "GEMINI_API_KEY", "\"AIzaSyCHdIRtCzYD21pF5eYMsZw-CvCLyEqCoBw\""
+            buildConfigField "String", "GEMINI_API_KEY", "\"\""
         }
     }
     compileOptions {
