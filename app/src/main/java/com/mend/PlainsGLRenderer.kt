@@ -52,9 +52,11 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private val fragmentShaderCode = """
         precision mediump float;
         uniform sampler2D u_texture;
+        uniform float u_alpha;
         varying vec2 v_texCoord;
         void main() {
-          gl_FragColor = texture2D(u_texture, v_texCoord);
+          vec4 color = texture2D(u_texture, v_texCoord);
+          gl_FragColor = vec4(color.rgb, color.a * u_alpha);
         }
     """.trimIndent()
 
@@ -62,6 +64,7 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private var positionHandle: Int = 0
     private var texCoordHandle: Int = 0
     private var textureUniformHandle: Int = 0
+    private var alphaUniformHandle: Int = 0
     private var mvpMatrixHandle: Int = 0
 
     private val projectionMatrix = FloatArray(16)
@@ -74,6 +77,11 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private var layer1Texture = 0
     private var layer2Texture = 0
     private var layer3Texture = 0
+    private var layer4Texture = 0
+    private var img1Texture = 0
+    private var img2Texture = 0
+    private var img3Texture = 0
+    private var img4Texture = 0
     private var screenWidth = 0
     private var screenHeight = 0
 
@@ -91,6 +99,11 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         layer1Texture = loadVectorTexture(R.drawable.plains_layer_1)
         layer2Texture = loadVectorTexture(R.drawable.plains_layer_2)
         layer3Texture = loadVectorTexture(R.drawable.plains_layer_3)
+        layer4Texture = loadVectorTexture(R.drawable.plains_layer_4)
+        img1Texture = loadVectorTexture(R.drawable.img_1)
+        img2Texture = loadVectorTexture(R.drawable.img_2)
+        img3Texture = loadVectorTexture(R.drawable.img_3)
+        img4Texture = loadVectorTexture(R.drawable.img_4)
         android.util.Log.d("PlainsRenderer", "Textures loaded. L1: $layer1Texture, L2: $layer2Texture, L3: $layer3Texture")
     }
 
@@ -149,14 +162,35 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         // Draw Layer 3 (Foreground - faster parallax)
         drawLayer(layer3Texture, 1.5f, baseScaleX, baseScaleY, extraScale, maxOffset)
 
+        // Draw Layer 4
+        // In art_creator lay4 has scale [14.4, 32] while lay1-3 have [40, 32]. 14.4 / 40 = 0.36
+        // It also has opacity 0.8.
+        drawLayer(layer4Texture, 2.0f, baseScaleX, baseScaleY, extraScale, maxOffset, 0f, 0f, 0.36f, 1f, 0.8f)
+
+        // Draw Images with explicit position and scale matching art_creator 
+        // Background was scale [40, 32]. So relative positions are X/20, Y/16. Relative scales are X/40, Y/32.
+        
+        // img1: pos[-2.74, 13.69], scale[3.44, 3.34]
+        drawLayer(img1Texture, 3.0f, baseScaleX, baseScaleY, extraScale, maxOffset, -0.137f, 0.855625f, 0.086f, 0.104375f)
+        
+        // img2: pos[2.79, 3.81], scale[13.5, 9.86]
+        drawLayer(img2Texture, 3.5f, baseScaleX, baseScaleY, extraScale, maxOffset, 0.1395f, 0.238125f, 0.3375f, 0.308125f)
+        
+        // img3: pos[-0.36, -5.08], scale[13.68, 7.92]
+        drawLayer(img3Texture, 4.0f, baseScaleX, baseScaleY, extraScale, maxOffset, -0.018f, -0.3175f, 0.342f, 0.2475f)
+        
+        // img4: pos[-0.37, -2.76], scale[2.14, 1.4]
+        drawLayer(img4Texture, 4.5f, baseScaleX, baseScaleY, extraScale, maxOffset, -0.0185f, -0.1725f, 0.0535f, 0.04375f)
+
         GLES20.glDisable(GLES20.GL_BLEND)
     }
 
-    private fun drawLayer(textureId: Int, parallaxSpeed: Float, baseScaleX: Float, baseScaleY: Float, extraScale: Float, maxOffset: Float) {
+    private fun drawLayer(textureId: Int, parallaxSpeed: Float, baseScaleX: Float, baseScaleY: Float, extraScale: Float, maxOffset: Float, posX: Float = 0f, posY: Float = 0f, scaleX: Float = 1f, scaleY: Float = 1f, alpha: Float = 1f) {
         Matrix.setIdentityM(viewMatrix, 0)
-        // Parallax removed per user request: texture remains locked in the center
-        Matrix.translateM(viewMatrix, 0, 0f, 0f, 0f)
-        Matrix.scaleM(viewMatrix, 0, baseScaleX * extraScale, baseScaleY * extraScale, 1f)
+        // Apply relative translation and scaling for specific layers
+        Matrix.translateM(viewMatrix, 0, posX * baseScaleX, posY * baseScaleY, 0f)
+        Matrix.scaleM(viewMatrix, 0, baseScaleX * extraScale * scaleX, baseScaleY * extraScale * scaleY, 1f)
+        
         
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
@@ -164,6 +198,7 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
         GLES20.glUniform1i(textureUniformHandle, 0)
+        GLES20.glUniform1f(alphaUniformHandle, alpha)
         
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, drawOrder.size, GLES20.GL_UNSIGNED_SHORT, drawListBuffer)
     }
@@ -239,6 +274,7 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         positionHandle = GLES20.glGetAttribLocation(program, "vPosition")
         texCoordHandle = GLES20.glGetAttribLocation(program, "a_texCoord")
         textureUniformHandle = GLES20.glGetUniformLocation(program, "u_texture")
+        alphaUniformHandle = GLES20.glGetUniformLocation(program, "u_alpha")
         mvpMatrixHandle = GLES20.glGetUniformLocation(program, "uMVPMatrix")
     }
 
