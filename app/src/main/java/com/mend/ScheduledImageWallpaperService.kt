@@ -87,7 +87,7 @@ class ScheduledImageWallpaperService : WallpaperService() {
                 try {
                     val uri = Uri.parse(uriString)
                     android.util.Log.d("ImageWallpaper", "Parsing URI: $uri")
-                    val inputStream = contentResolver.openInputStream(uri)
+                    val inputStream = WallpaperUtils.openStreamFromUri(this@ScheduledImageWallpaperService, uri)
                     if (inputStream == null) {
                         android.util.Log.e("ImageWallpaper", "InputStream is null for URI: $uri")
                         return

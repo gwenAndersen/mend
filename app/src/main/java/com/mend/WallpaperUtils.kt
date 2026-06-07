@@ -12,7 +12,7 @@ object WallpaperUtils {
     private const val PREFS_NAME = "mend_prefs"
     private const val KEY_SCHEDULES = "wallpaper_schedules"
     private const val KEY_CURRENT_URI = "current_wallpaper_uri"
-    private const val SCHEDULES_FILE_PATH = "/sdcard/mend/schedules.json"
+    private const val SCHEDULES_FILE_PATH = "/sdcard/alyf/schedules.json"
 
     private val gson = GsonBuilder()
         .registerTypeAdapter(Uri::class.java, UriTypeAdapter())
@@ -69,6 +69,51 @@ object WallpaperUtils {
         android.util.Log.d("WallpaperUtils", "Saving schedules to prefs: $json")
         prefs.edit().putString(KEY_SCHEDULES, json).commit()
         updateCurrentWallpaper(context)
+    }
+
+    fun openStreamFromUri(context: Context, uri: Uri): java.io.InputStream? {
+        try {
+            return context.contentResolver.openInputStream(uri)
+        } catch (e: SecurityException) {
+            android.util.Log.w("WallpaperUtils", "SecurityException opening URI: $uri. Trying fallback.")
+            val path = getPathFromMediaUri(context, uri)
+            if (path != null) {
+                try {
+                    return java.io.FileInputStream(path)
+                } catch (e2: Exception) {
+                    android.util.Log.e("WallpaperUtils", "Error opening file path: $path", e2)
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("WallpaperUtils", "Error opening URI: $uri", e)
+        }
+        return null
+    }
+
+    private fun getPathFromMediaUri(context: Context, uri: Uri): String? {
+        val uriString = uri.toString()
+        try {
+            if (uriString.contains("com.android.providers.media.documents")) {
+                val docId = uri.lastPathSegment ?: return null
+                if (docId.startsWith("image:")) {
+                    val id = docId.substringAfter("image:")
+                    val contentUri = android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                    val projection = arrayOf("_data") // MediaStore.Images.Media.DATA
+                    val selection = "_id = ?"
+                    val selectionArgs = arrayOf(id)
+                    context.contentResolver.query(contentUri, projection, selection, selectionArgs, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val path = cursor.getString(0)
+                            android.util.Log.d("WallpaperUtils", "Resolved path for ID $id: $path")
+                            return path
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("WallpaperUtils", "Error resolving path from MediaStore", e)
+        }
+        return null
     }
 
     fun updateCurrentWallpaper(context: Context) {

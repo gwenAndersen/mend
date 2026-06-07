@@ -44,11 +44,13 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.service.wallpaper.WallpaperService" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <meta-data
                 android:name="android.service.wallpaper"
                 android:resource="@xml/wallpaper_info" />
         </service>
+        -->
 
         <service
             android:name=".ScheduledImageWallpaperService"
@@ -57,12 +59,12 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.service.wallpaper.WallpaperService" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <meta-data
                 android:name="android.service.wallpaper"
                 android:resource="@xml/wallpaper_info" />
         </service>
-        -->
 
         <service
             android:name=".PlainsWallpaperService"

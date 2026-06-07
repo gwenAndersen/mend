@@ -41,6 +41,7 @@ class MendSettingsActivity : AppCompatActivity() {
 
     private var mHour: Int = 0
     private var mMinute: Int = 0
+    private var editingPosition: Int = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,6 +116,20 @@ class MendSettingsActivity : AppCompatActivity() {
             layoutJsonTextView.text = "Captured Layout:\n" + (it ?: "No layout captured")
             Toast.makeText(this, "Layout captured!", Toast.LENGTH_SHORT).show()
         }
+
+        val toggleImagesSwitch = findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.toggle_images_switch)
+        val toggleFpsSwitch = findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.toggle_fps_switch)
+
+        toggleImagesSwitch.isChecked = sharedPreferences.getBoolean("plains_show_images", true)
+        toggleFpsSwitch.isChecked = sharedPreferences.getBoolean("plains_show_fps", false)
+
+        toggleImagesSwitch.setOnCheckedChangeListener { _, isChecked ->
+            sharedPreferences.edit().putBoolean("plains_show_images", isChecked).apply()
+        }
+
+        toggleFpsSwitch.setOnCheckedChangeListener { _, isChecked ->
+            sharedPreferences.edit().putBoolean("plains_show_fps", isChecked).apply()
+        }
     }
 
     private fun addWallpaperSchedule() {
@@ -180,10 +195,10 @@ class MendSettingsActivity : AppCompatActivity() {
     }
 
     private fun openFilePickerForEdit(position: Int) {
+        editingPosition = position
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "image/*"
-            putExtra("position", position)
         }
         pickImageLauncherForEdit.launch(intent)
     }
@@ -196,11 +211,11 @@ class MendSettingsActivity : AppCompatActivity() {
                 val mimeType = contentResolver.getType(it)
                 if (mimeType?.startsWith("image/") == true) {
                     contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    val position = data.getIntExtra("position", -1)
-                    if (position != -1) {
-                        schedules[position] = WallpaperSchedule(it, mHour, mMinute)
-                        adapter.notifyItemChanged(position)
+                    if (editingPosition != -1) {
+                        schedules[editingPosition] = WallpaperSchedule(it, mHour, mMinute)
+                        adapter.notifyItemChanged(editingPosition)
                         saveSchedules()
+                        editingPosition = -1
                     }
                 } else {
                     Toast.makeText(this, "Please select a valid image file", Toast.LENGTH_SHORT).show()

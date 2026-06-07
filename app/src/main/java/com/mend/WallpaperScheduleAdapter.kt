@@ -34,11 +34,20 @@ class WallpaperScheduleAdapter(
         
         // Load Thumbnail
         try {
-            val thumbnail: Bitmap? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                holder.itemView.context.contentResolver.loadThumbnail(schedule.uri, Size(200, 200), null)
-            } else {
-                @Suppress("DEPRECATION")
-                android.provider.MediaStore.Images.Media.getBitmap(holder.itemView.context.contentResolver, schedule.uri)
+            var thumbnail: Bitmap? = null
+            try {
+                thumbnail = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    holder.itemView.context.contentResolver.loadThumbnail(schedule.uri, Size(200, 200), null)
+                } else {
+                    @Suppress("DEPRECATION")
+                    android.provider.MediaStore.Images.Media.getBitmap(holder.itemView.context.contentResolver, schedule.uri)
+                }
+            } catch (se: SecurityException) {
+                android.util.Log.w("WallpaperAdapter", "SecurityException loading thumbnail for ${schedule.uri}. Trying fallback.")
+                val inputStream = WallpaperUtils.openStreamFromUri(holder.itemView.context, schedule.uri)
+                if (inputStream != null) {
+                    thumbnail = android.graphics.BitmapFactory.decodeStream(inputStream)
+                }
             }
             holder.scheduleImageView.setImageBitmap(thumbnail)
         } catch (e: Exception) {
@@ -52,14 +61,18 @@ class WallpaperScheduleAdapter(
 
     private fun getFileName(contentResolver: android.content.ContentResolver, uri: Uri): String? {
         var name: String? = null
-        val cursor = contentResolver.query(uri, null, null, null, null)
-        cursor?.use {
-            if (it.moveToFirst()) {
-                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (nameIndex != -1) {
-                    name = it.getString(nameIndex)
+        try {
+            val cursor = contentResolver.query(uri, null, null, null, null)
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex != -1) {
+                        name = it.getString(nameIndex)
+                    }
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
         return name ?: uri.lastPathSegment
     }
