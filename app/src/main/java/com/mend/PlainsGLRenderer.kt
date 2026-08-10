@@ -70,6 +70,7 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private val projectionMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
     private val mvpMatrix = FloatArray(16)
+    private val particleProjectionMatrix = FloatArray(16)
     
     private var offsetX = 0f
     private var offsetY = 0f
@@ -88,15 +89,46 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private var showImages = true
     private var showFps = false
     
+    // Particle system
+    private var particleSystem: AtmosphericParticleSystem? = null
+    private var particleProgram: Int = 0
+    private var particlePositionHandle: Int = 0
+    private var particleDataHandle: Int = 0 // x, y, alpha, state
+    private var particleMvpMatrixHandle: Int = 0
+    private lateinit var particleBuffer: FloatBuffer
+
+    private val particleVertexShaderCode = """
+        uniform mat4 uMVPMatrix;
+        attribute vec2 vPosition;
+        attribute vec2 aData; // x: alpha, y: state
+        varying float vAlpha;
+        void main() {
+          gl_Position = uMVPMatrix * vec4(vPosition, 0.0, 1.0);
+          gl_PointSize = 4.5; // Exactly matching 2side's strokeWidth
+          vAlpha = aData.x;
+        }
+    """.trimIndent()
+
+    private val particleFragmentShaderCode = """
+        precision mediump float;
+        varying float vAlpha;
+        void main() {
+          float dist = distance(gl_PointCoord, vec2(0.5));
+          if (dist > 0.5) discard;
+          gl_FragColor = vec4(1.0, 1.0, 1.0, vAlpha);
+        }
+    """.trimIndent()
+
     // UI controls
-    private var uiTexture = 0
-    private val uiQuadVertices = floatArrayOf(
-        0.5f,  0.95f,  // top left of UI area (normalized to screen ratio later)
-        0.5f,  0.80f,  // bottom left
-        0.95f, 0.80f,  // bottom right
-        0.95f, 0.95f   // top right
+    private var menuVisible = false
+    private var menuTexture = 0
+    private val menuQuadVertices = floatArrayOf(
+        -0.4f,  0.4f,  // top left
+        -0.4f, -0.4f,  // bottom left
+         0.4f, -0.4f,  // bottom right
+         0.4f,  0.4f   // top right
     )
-    private lateinit var uiVertexBuffer: FloatBuffer
+    private lateinit var menuVertexBuffer: FloatBuffer
 
     // FPS counter variables
     private var frameCount = 0
@@ -121,36 +153,64 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
     fun updateSettings(showImages: Boolean, showFps: Boolean) {
         this.showImages = showImages
         this.showFps = showFps
-        updateUiTexture()
+        if (menuVisible) updateMenuTexture()
+    }
+
+    fun toggleMenu() {
+        menuVisible = !menuVisible
+        if (menuVisible) updateMenuTexture()
     }
 
     fun handleTouch(x: Float, y: Float): Boolean {
-        if (screenWidth == 0 || screenHeight == 0) return false
+        particleSystem?.triggerRipple(x, y)
+        if (!menuVisible || screenWidth == 0 || screenHeight == 0) return false
         
         val ratio = screenWidth.toFloat() / screenHeight.toFloat()
         val orthoX = (x / screenWidth * 2f - 1f) * ratio
         val orthoY = 1f - (y / screenHeight * 2f)
         
-        // UI area in ortho: (0.5 * ratio, 0.80) to (0.95 * ratio, 0.95)
-        if (orthoX > 0.5f * ratio && orthoX < 0.95f * ratio && orthoY > 0.80f && orthoY < 0.95f) {
-            // Check if Left half (IMG) or Right half (FPS)
-            if (orthoX < 0.725f * ratio) {
-                showImages = !showImages
-                sharedPreferences.edit().putBoolean("plains_show_images", showImages).apply()
-            } else {
-                showFps = !showFps
-                sharedPreferences.edit().putBoolean("plains_show_fps", showFps).apply()
+        // Menu area in ortho: (-0.4 * ratio, -0.4) to (0.4 * ratio, 0.4)
+        if (orthoX > -0.4f * ratio && orthoX < 0.4f * ratio && orthoY > -0.4f && orthoY < 0.4f) {
+            // Normalized Y within menu: 0.0 (bottom) to 1.0 (top)
+            val menuY = (orthoY + 0.4f) / 0.8f
+            
+            // 5 items now: Images, FPS, Dark Wave, Ripples, Close
+            when {
+                menuY > 0.8f -> {
+                    showImages = !showImages
+                    sharedPreferences.edit().putBoolean("plains_show_images", showImages).apply()
+                }
+                menuY > 0.6f -> {
+                    showFps = !showFps
+                    sharedPreferences.edit().putBoolean("plains_show_fps", showFps).apply()
+                }
+                menuY > 0.4f -> {
+                    val current = sharedPreferences.getBoolean("dark_wave_enabled", true)
+                    val next = !current
+                    sharedPreferences.edit().putBoolean("dark_wave_enabled", next).apply()
+                    particleSystem?.isDarkWaveEnabled = next
+                }
+                menuY > 0.2f -> {
+                    val current = sharedPreferences.getBoolean("ripple_enabled", true)
+                    val next = !current
+                    sharedPreferences.edit().putBoolean("ripple_enabled", next).apply()
+                    particleSystem?.isRippleEnabled = next
+                }
+                else -> {
+                    menuVisible = false
+                }
             }
-            updateUiTexture()
+            updateMenuTexture()
             return true
         }
         return false
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-        GLES20.glClearColor(0f, 0f, 0f, 0f) // Transparent/Black base
+        GLES20.glClearColor(0.0117f, 0.0274f, 0.0705f, 1.0f) // #030712 base
         setupBuffers()
         setupShaders()
+        setupParticleShaders()
         
         sharedPreferences = context.getSharedPreferences("mend_prefs", android.content.Context.MODE_PRIVATE)
         showImages = sharedPreferences.getBoolean("plains_show_images", true)
@@ -171,12 +231,10 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
             order(ByteOrder.nativeOrder())
             asFloatBuffer().apply { put(fpsQuadVertices); position(0) }
         }
-        uiVertexBuffer = ByteBuffer.allocateDirect(uiQuadVertices.size * 4).run {
+        menuVertexBuffer = ByteBuffer.allocateDirect(menuQuadVertices.size * 4).run {
             order(ByteOrder.nativeOrder())
-            asFloatBuffer().apply { put(uiQuadVertices); position(0) }
+            asFloatBuffer().apply { put(menuQuadVertices); position(0) }
         }
-        
-        updateUiTexture()
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -184,23 +242,41 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         screenWidth = width
         screenHeight = height
         
+        // Initialize particle system with current screen size
+        particleSystem = AtmosphericParticleSystem(width, height).apply {
+            isRippleEnabled = sharedPreferences.getBoolean("ripple_enabled", true)
+            isDarkWaveEnabled = sharedPreferences.getBoolean("dark_wave_enabled", true)
+        }
+        // Buffer: 4 floats per particle (x, y, alpha, state)
+        particleBuffer = ByteBuffer.allocateDirect(particleSystem!!.particleCount * 4 * 4).run {
+            order(ByteOrder.nativeOrder())
+            asFloatBuffer()
+        }
+        
         val ratio = width.toFloat() / height.toFloat()
         Matrix.orthoM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, -1f, 1f)
         
-        // Adjust UI buttons position based on ratio
-        val uiVertices = floatArrayOf(
-            0.5f * ratio,  0.95f,
-            0.5f * ratio,  0.80f,
-            0.95f * ratio, 0.80f,
-            0.95f * ratio, 0.95f
+        // Matrix for particles: Map pixel coordinates (0,0)-(width,height) to screen
+        // Invert Y to match 2side (0 at top, height at bottom)
+        Matrix.orthoM(particleProjectionMatrix, 0, 0f, width.toFloat(), height.toFloat(), 0f, -1f, 1f)
+
+        // Adjust Menu position based on ratio
+        val menuVertices = floatArrayOf(
+            -0.4f * ratio,  0.4f,
+            -0.4f * ratio, -0.4f,
+             0.4f * ratio, -0.4f,
+             0.4f * ratio,  0.4f
         )
-        uiVertexBuffer.clear()
-        uiVertexBuffer.put(uiVertices)
-        uiVertexBuffer.position(0)
+        menuVertexBuffer.clear()
+        menuVertexBuffer.put(menuVertices)
+        menuVertexBuffer.position(0)
     }
 
     override fun onDrawFrame(gl: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+
+        drawParticles()
+
         if (layer1Texture == 0 || layer2Texture == 0 || layer3Texture == 0) return
 
         GLES20.glUseProgram(program)
@@ -242,41 +318,69 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
             drawLayer(img4Texture, 0.0f, baseScaleX, baseScaleY, maxOffset, -0.0185f, -0.1725f, 0.0535f, 0.04375f)
         }
         
-        drawUI()
+        if (menuVisible) drawMenu()
         if (showFps) drawFps()
 
         GLES20.glDisable(GLES20.GL_BLEND)
     }
 
-    private fun drawUI() {
-        if (uiTexture == 0) return
-        GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 0, uiVertexBuffer)
+    private fun drawMenu() {
+        if (menuTexture == 0) return
+        GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 0, menuVertexBuffer)
         Matrix.setIdentityM(viewMatrix, 0)
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, uiTexture)
-        GLES20.glUniform1f(alphaUniformHandle, 0.8f)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, menuTexture)
+        GLES20.glUniform1f(alphaUniformHandle, 0.9f)
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, drawOrder.size, GLES20.GL_UNSIGNED_SHORT, drawListBuffer)
         GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 0, vertexBuffer)
     }
 
-    private fun updateUiTexture() {
-        val bitmap = Bitmap.createBitmap(256, 128, Bitmap.Config.ARGB_8888)
+    private fun updateMenuTexture() {
+        val bitmap = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        val paint = Paint().apply { isAntiAlias = true; textSize = 40f; textAlign = Paint.Align.CENTER; style = Paint.Style.FILL }
         
-        // IMG button
-        paint.color = if (showImages) Color.parseColor("#4CAF50") else Color.parseColor("#F44336")
-        canvas.drawRect(10f, 10f, 120f, 118f, paint)
-        paint.color = Color.WHITE; canvas.drawText("IMG", 65f, 75f, paint)
+        // Background
+        val paint = Paint().apply { 
+            isAntiAlias = true
+            style = Paint.Style.FILL
+            color = Color.parseColor("#CC000000") // Semi-transparent black
+        }
+        canvas.drawRoundRect(0f, 0f, 512f, 512f, 40f, 40f, paint)
         
-        // FPS button
-        paint.color = if (showFps) Color.parseColor("#2196F3") else Color.parseColor("#9E9E9E")
-        canvas.drawRect(136f, 10f, 246f, 118f, paint)
-        paint.color = Color.WHITE; canvas.drawText("FPS", 191f, 75f, paint)
+        // Border
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 4f
+        paint.color = Color.WHITE
+        canvas.drawRoundRect(2f, 2f, 510f, 510f, 40f, 40f, paint)
         
-        if (uiTexture == 0) uiTexture = loadTexture(bitmap)
-        else { GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, uiTexture); GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0) }
+        // Text
+        paint.style = Paint.Style.FILL
+        paint.textSize = 48f
+        paint.textAlign = Paint.Align.CENTER
+        
+        val items = listOf(
+            "Images: " + if (showImages) "ON" else "OFF",
+            "FPS: " + if (showFps) "ON" else "OFF",
+            "Dark Wave: " + if (sharedPreferences.getBoolean("dark_wave_enabled", true)) "ON" else "OFF",
+            "Ripples: " + if (sharedPreferences.getBoolean("ripple_enabled", true)) "ON" else "OFF",
+            "Close Menu"
+        )
+        
+        for (i in items.indices) {
+            paint.color = if (i == items.size - 1) Color.LTGRAY else Color.WHITE
+            canvas.drawText(items[i], 256f, 100f + i * 90f, paint)
+            
+            // Separators
+            if (i < items.size - 1) {
+                paint.color = Color.DKGRAY
+                canvas.drawLine(50f, 130f + i * 90f, 462f, 130f + i * 90f, paint)
+                paint.color = Color.WHITE
+            }
+        }
+        
+        if (menuTexture == 0) menuTexture = loadTexture(bitmap)
+        else { GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, menuTexture); GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0) }
         bitmap.recycle()
     }
 
@@ -381,6 +485,58 @@ class PlainsGLRenderer(private val context: Context) : GLSurfaceView.Renderer {
         textureUniformHandle = GLES20.glGetUniformLocation(program, "u_texture")
         alphaUniformHandle = GLES20.glGetUniformLocation(program, "u_alpha")
         mvpMatrixHandle = GLES20.glGetUniformLocation(program, "uMVPMatrix")
+    }
+
+    private fun setupParticleShaders() {
+        val vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, particleVertexShaderCode)
+        val fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, particleFragmentShaderCode)
+        particleProgram = GLES20.glCreateProgram().apply {
+            GLES20.glAttachShader(this, vertexShader)
+            GLES20.glAttachShader(this, fragmentShader)
+            GLES20.glLinkProgram(this)
+        }
+        particlePositionHandle = GLES20.glGetAttribLocation(particleProgram, "vPosition")
+        particleDataHandle = GLES20.glGetAttribLocation(particleProgram, "aData")
+        particleMvpMatrixHandle = GLES20.glGetUniformLocation(particleProgram, "uMVPMatrix")
+    }
+
+    private fun drawParticles() {
+        val system = particleSystem ?: return
+        system.update()
+
+        particleBuffer.clear()
+        for (i in 0 until system.particleCount) {
+            particleBuffer.put(system.px[i])
+            particleBuffer.put(system.py[i])
+            particleBuffer.put(system.palpha[i])
+            
+            // State: 0 (Normal), 1 (Dark), 2 (Glowing)
+            val state = if (system.isGlowing[i]) 2.0f else if (system.isDark[i]) 1.0f else 0.0f
+            particleBuffer.put(state)
+        }
+        particleBuffer.position(0)
+
+        GLES20.glUseProgram(particleProgram)
+        GLES20.glUniformMatrix4fv(particleMvpMatrixHandle, 1, false, particleProjectionMatrix, 0)
+
+        GLES20.glEnableVertexAttribArray(particlePositionHandle)
+        GLES20.glEnableVertexAttribArray(particleDataHandle)
+
+        // Point position (x, y) - offset 0, stride 4*4
+        particleBuffer.position(0)
+        GLES20.glVertexAttribPointer(particlePositionHandle, 2, GLES20.GL_FLOAT, false, 4 * 4, particleBuffer)
+        
+        // Point data (alpha, state) - offset 2, stride 4*4
+        particleBuffer.position(2)
+        GLES20.glVertexAttribPointer(particleDataHandle, 2, GLES20.GL_FLOAT, false, 4 * 4, particleBuffer)
+
+        GLES20.glDrawArrays(GLES20.GL_POINTS, 0, system.particleCount)
+
+        GLES20.glDisableVertexAttribArray(particlePositionHandle)
+        GLES20.glDisableVertexAttribArray(particleDataHandle)
+        
+        // Restore standard program for next frame items
+        GLES20.glUseProgram(program)
     }
 
     private fun loadShader(type: Int, shaderCode: String): Int {

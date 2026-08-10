@@ -91,10 +91,27 @@ class MendSettingsActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
+        findViewById<MaterialButton>(R.id.set_particles_wallpaper_button).setOnClickListener {
+            val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
+            intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
+                ComponentName(this, NightSkyWallpaperService::class.java))
+            startActivity(intent)
+        }
+
         findViewById<MaterialButton>(R.id.set_scheduled_wallpaper_button).setOnClickListener {
             val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
             intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
                 ComponentName(this, ScheduledImageWallpaperService::class.java))
+            startActivity(intent)
+        }
+
+        findViewById<MaterialButton>(R.id.preview_scheduled_wallpaper_button).setOnClickListener {
+            val intent = Intent(this, WallpaperPreviewActivity::class.java)
+            startActivity(intent)
+        }
+
+        findViewById<MaterialButton>(R.id.open_data_map_button).setOnClickListener {
+            val intent = Intent(this, DataMapActivity::class.java)
             startActivity(intent)
         }
 
@@ -115,20 +132,6 @@ class MendSettingsActivity : AppCompatActivity() {
         SharedViewModel.capturedLayoutJson.observe(this) {
             layoutJsonTextView.text = "Captured Layout:\n" + (it ?: "No layout captured")
             Toast.makeText(this, "Layout captured!", Toast.LENGTH_SHORT).show()
-        }
-
-        val toggleImagesSwitch = findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.toggle_images_switch)
-        val toggleFpsSwitch = findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.toggle_fps_switch)
-
-        toggleImagesSwitch.isChecked = sharedPreferences.getBoolean("plains_show_images", true)
-        toggleFpsSwitch.isChecked = sharedPreferences.getBoolean("plains_show_fps", false)
-
-        toggleImagesSwitch.setOnCheckedChangeListener { _, isChecked ->
-            sharedPreferences.edit().putBoolean("plains_show_images", isChecked).apply()
-        }
-
-        toggleFpsSwitch.setOnCheckedChangeListener { _, isChecked ->
-            sharedPreferences.edit().putBoolean("plains_show_fps", isChecked).apply()
         }
     }
 

@@ -19,34 +19,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        checkPermissions()
-
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = android.view.Gravity.CENTER
-            setPadding(32, 32, 32, 32)
-        }
-
-        val btnSetWallpaper = Button(this).apply {
-            text = "Set Terraria Live Wallpaper"
-            setOnClickListener {
-                val intent = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
-                    putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, ComponentName(this@MainActivity, Live3dWallpaperService::class.java))
-                }
-                startActivity(intent)
-            }
-        }
-
-        val btnSettings = Button(this).apply {
-            text = "Open Settings"
-            setOnClickListener {
-                startActivity(Intent(this@MainActivity, MendSettingsActivity::class.java))
-            }
-        }
-
-        layout.addView(btnSetWallpaper)
-        layout.addView(btnSettings)
-        setContentView(layout)
+        // Open Settings immediately as requested
+        startActivity(Intent(this, MendSettingsActivity::class.java))
+        finish()
+        return
     }
 
     private fun checkPermissions() {

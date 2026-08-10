@@ -79,9 +79,32 @@
                 android:resource="@xml/wallpaper_info" />
         </service>
 
+        <service
+            android:name=".NightSkyWallpaperService"
+            android:label="Mend Particles Wallpaper"
+            android:permission="android.permission.BIND_WALLPAPER"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/wallpaper_info" />
+        </service>
+
         <activity
             android:name=".MendSettingsActivity"
             android:label="Mend Settings"
+            android:exported="true" />
+
+        <activity
+            android:name=".WallpaperPreviewActivity"
+            android:label="Wallpaper Preview"
+            android:exported="false" />
+
+        <activity
+            android:name=".DataMapActivity"
+            android:label="Data Map"
             android:exported="true" />
 
         <service

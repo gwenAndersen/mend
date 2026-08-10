@@ -93,6 +93,51 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Particles Wallpaper Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Particles Wallpaper"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorPrimary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Full 2side interactive starfield engine"
+                        android:textSize="14sp"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/set_particles_wallpaper_button"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Apply Particles Wallpaper"
+                        app:icon="@android:drawable/star_big_on" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Plains Wallpaper Section -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -135,44 +180,6 @@
                         android:text="Apply Plains Wallpaper"
                         app:icon="@android:drawable/ic_menu_gallery" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Show Parallax Images" />
-
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/toggle_images_switch"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Show FPS Counter" />
-
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/toggle_fps_switch"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
-                    </LinearLayout>
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -210,6 +217,27 @@
                 android:layout_marginTop="8dp"
                 android:text="Apply Scheduled Wallpaper"
                 app:icon="@android:drawable/ic_menu_today" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/preview_scheduled_wallpaper_button"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="8dp"
+                android:text="Preview Scheduled Wallpaper"
+                app:icon="@android:drawable/ic_menu_view" />
+
+            <!-- Data Map Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/open_data_map_button"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="16dp"
+                android:text="Open Data Map"
+                app:icon="@android:drawable/ic_menu_mapmode" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/wallpaper_schedule_list"
